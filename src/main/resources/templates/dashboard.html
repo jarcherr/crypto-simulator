@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Crypto Simulator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar-custom {
+            background: #151c2c;
+            border-bottom: 1px solid #1e293b;
+        }
+        .crypto-card {
+            background: #151c2c;
+            border: 1px solid #1e293b;
+            border-radius: 14px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .crypto-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+            border-color: #3b82f6;
+        }
+        .badge-balance {
+            background: #1e293b;
+            border: 1px solid #3b82f6;
+            color: #38bdf8;
+            font-size: 1rem;
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+        .form-control-dark {
+            background: #0b0f19;
+            border: 1px solid #334155;
+            color: #fff;
+        }
+        .form-control-dark:focus {
+            background: #0b0f19;
+            color: #fff;
+            border-color: #3b82f6;
+            box-shadow: none;
+        }
+        .table-dark-custom {
+            background: #151c2c;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #1e293b;
+        }
+        .table-dark-custom th {
+            background: #1e293b;
+            color: #94a3b8;
+            border: none;
+        }
+        .table-dark-custom td {
+            border-bottom: 1px solid #1e293b;
+            color: #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark navbar-custom px-4 py-3">
+        <a class="navbar-brand fw-bold text-primary" href="#">💎 Crypto Trading Pro</a>
+        <div class="d-flex align-items-center gap-3">
+            <span class="badge-balance">
+                Saldo Ficticio: <strong>$<span th:text="${#numbers.formatDecimal(usuario.saldoFicticio, 1, 2)}"></span> USD</strong>
+            </span>
+            <span class="text-secondary">|</span>
+            <span class="text-light fw-semibold" th:text="${usuario.nombre}"></span>
+            <a href="/" class="btn btn-outline-danger btn-sm rounded-pill px-3">Salir</a>
+        </div>
+    </nav>
+    
+    <!-- Alertas dinámicas de éxito o error -->
+    <div class="container mt-3" th:if="${error}">
+        <div class="alert alert-danger alert-dismissible fade show bg-dark text-danger border-danger shadow" role="alert">
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+    <div class="container mt-3" th:if="${exito}">
+        <div class="alert alert-success alert-dismissible fade show bg-dark text-success border-success shadow" role="alert">
+            <span th:text="${exito}"></span>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+    
+    <div class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold">Mercado en Tiempo Real</h3>
+            <span class="badge bg-secondary">Monto mín. requerido: 0.01 unidades de cripto</span>
+        </div>
+
+        <!-- Cards de Criptomonedas -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-4" th:each="c : ${criptomonedas}">
+                <div class="card crypto-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="fw-bold mb-0" th:text="${c.nombre}"></h4>
+                        <span class="badge bg-primary fs-6" th:text="${c.simbolo}"></span>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-secondary">Precio Unitario Actual</small>
+                        <h3 class="text-success fw-bold">$<span th:text="${#numbers.formatDecimal(c.precioActual, 1, 2)}"></span></h3>
+                    </div>
+                    <form th:action="@{/operar}" method="post">
+                        <input type="hidden" name="userId" th:value="${usuario.id}">
+                        <input type="hidden" name="criptoId" th:value="${c.id}">
+                        <div class="mb-3">
+                            <input type="number" step="any" name="montoUSD" class="form-control form-control-dark" placeholder="Monto en USD (Ej. 50)" required>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button type="submit" name="tipo" value="COMPRA" class="btn btn-success w-100 fw-bold">Comprar</button>
+                            </div>
+                            <div class="col-6">
+                                <button type="submit" name="tipo" value="VENTA" class="btn btn-danger w-100 fw-bold">Vender</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Historial -->
+        <h4 class="fw-bold mb-3">Mi Historial de Operaciones</h4>
+        <div class="table-responsive table-dark-custom shadow">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID Transacción</th>
+                        <th>Tipo</th>
+                        <th>Criptomoneda</th>
+                        <th>Cantidad Adquirida</th>
+                        <th>Precio Ejecución</th>
+                        <th>Fecha y Hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="t : ${transacciones}">
+                        <td th:text="${t.id}"></td>
+                        <td>
+                            <span th:text="${t.tipo}" th:class="${t.tipo == 'COMPRA'} ? 'badge bg-success' : 'badge bg-danger'"></span>
+                        </td>
+                        <td class="fw-bold" th:text="${t.criptomoneda.nombre} + ' (' + ${t.criptomoneda.simbolo} + ')'"></td>
+                        <td th:text="${#numbers.formatDecimal(t.cantidad, 1, 6)}"></td>
+                        <td th:text="'$' + ${#numbers.formatDecimal(t.precioUnitario, 1, 2)}"></td>
+                        <td class="text-secondary" th:text="${#temporals.format(t.fecha, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(transacciones)}">
+                        <td colspan="6" class="text-center text-secondary py-4">No has realizado ninguna transacción aún.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
